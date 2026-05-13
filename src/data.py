@@ -1,6 +1,7 @@
 import yfinance as yf
 import pandas as pd
 import pytz
+import datetime
 from tvDatafeed import TvDatafeed, Interval
 
 def fetch_soxl_data(period="5d", interval="5m"):
@@ -61,11 +62,13 @@ def fetch_soxl_data(period="5d", interval="5m"):
         df_tv = tv.get_hist(symbol='SOXL', exchange='BOATS', interval=tv_interval, n_bars=n_bars)
         
         if df_tv is not None and not df_tv.empty:
-            # TVデータのインデックスをJSTからUTC経由で変換（TVのnologinは通常ローカル時系列を返すが、ここでは一旦JSTと仮定）
-            # もしUTCで返ってくる場合は tz_localize('UTC').tz_convert(eastern) になる
-            # PoCの結果、システム時間(JST)と一致していたため、JSTとしてlocalize
-            jst = pytz.timezone('Asia/Tokyo')
-            df_tv.index = df_tv.index.tz_localize(jst).tz_convert(eastern)
+            # TVデータのインデックスをローカル時刻として解釈
+            if df_tv.index.tz is None:
+                local_tz = datetime.datetime.now().astimezone().tzinfo
+                df_tv.index = df_tv.index.tz_localize(local_tz)
+            
+            # 米東部時間に変換
+            df_tv.index = df_tv.index.tz_convert(eastern)
             
             # 必要なカラムをyfinanceに合わせる
             df_tv = df_tv[['open', 'high', 'low', 'close', 'volume']].copy()
