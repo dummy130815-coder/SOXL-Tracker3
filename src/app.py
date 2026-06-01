@@ -1,13 +1,24 @@
 import streamlit as st
 import plotly.graph_objects as go
-from data import fetch_soxl_data
+from data import fetch_stock_data
 import datetime
 import pandas as pd
 from streamlit_autorefresh import st_autorefresh
 
+# --- Symbol Selection via query_params (must be before set_page_config) ---
+if "symbol" in st.query_params:
+    st.query_params["symbol"] = st.query_params["symbol"].upper()
+else:
+    st.query_params["symbol"] = "SOXL"
+
+selected_ticker = st.query_params.get("symbol", "SOXL").strip().upper()
+if not selected_ticker:
+    selected_ticker = "SOXL"
+    st.query_params["symbol"] = selected_ticker
+
 # --- Page Config ---
 st.set_page_config(
-    page_title="SOXL Tracker",
+    page_title=f"{selected_ticker} Tracker",
     page_icon="📈",
     layout="wide"
 )
@@ -59,12 +70,12 @@ if 'selected_period' not in st.session_state:
 
 # --- Fetch Data ---
 @st.cache_data(ttl=60)
-def load_data(period, interval):
-    return fetch_soxl_data(period=period, interval=interval)
+def load_data(ticker, period, interval):
+    return fetch_stock_data(ticker=ticker, period=period, interval=interval)
 
 p_conf = period_map[st.session_state.selected_period]
 with st.spinner(""):
-    df = load_data(p_conf["p"], p_conf["i"])
+    df = load_data(selected_ticker, p_conf["p"], p_conf["i"])
 
 if df.empty:
     st.error("Data error")
@@ -100,7 +111,7 @@ display_session = session_icons.get(current_session, current_session)
 
 # 強制横並びカラム
 m1, m2, m3 = st.columns(3)
-m1.metric("SOXL", f"${current_price:.2f}", f"{change_pct:+.2f}%")
+m1.metric(selected_ticker, f"${current_price:.2f}", f"{change_pct:+.2f}%")
 m2.metric("Market", display_session)
 m3.metric("Time", last_update)
 

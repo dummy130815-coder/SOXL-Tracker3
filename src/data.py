@@ -4,17 +4,17 @@ import pytz
 import datetime
 from tvDatafeed import TvDatafeed, Interval
 
-def fetch_soxl_data(period="5d", interval="5m"):
+def fetch_stock_data(ticker: str = "SOXL", period: str = "5d", interval: str = "5m"):
     """
-    SOXLの全セッション（通常・時間外・オーバーナイト）を取得し、統合する関数。
+    指定した銘柄の全セッション（通常・時間外・オーバーナイト）を取得し、統合する関数。
     """
     # 1. yfinanceから通常・時間外データを取得
-    ticker = "SOXL"
     stock = yf.Ticker(ticker)
     df_yf = stock.history(period=period, interval=interval, prepost=True)
-    
     if df_yf.empty:
         return df_yf
+    
+
         
     # 米東部時間(EST/EDT)に変換してセッション判定
     eastern = pytz.timezone('US/Eastern')
@@ -59,7 +59,7 @@ def fetch_soxl_data(period="5d", interval="5m"):
         else: n_bars = 1000
         
         tv = TvDatafeed()
-        df_tv = tv.get_hist(symbol='SOXL', exchange='BOATS', interval=tv_interval, n_bars=n_bars)
+        df_tv = tv.get_hist(symbol=ticker, exchange='BOATS', interval=tv_interval, n_bars=n_bars)
         
         if df_tv is not None and not df_tv.empty:
             # TVデータのインデックスをローカル時刻として解釈
